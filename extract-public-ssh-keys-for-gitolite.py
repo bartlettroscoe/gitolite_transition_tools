@@ -55,8 +55,8 @@ def getNormalizedMachineOriginName(machineOriginName):
   return normalizedMachineOriginName
 
 
-def writePublicSSHKeyFile(authorizedKeyLine, normalizedMachineOriginName, keydir):
-  publicKeyFile = keydir+"/"+normalizedMachineOriginName+".pub"
+def writePublicSSHKeyFile(userid, authorizedKeyLine, normalizedMachineOriginName, keydir):
+  publicKeyFile = keydir+"/"+userid+"@"+normalizedMachineOriginName+".pub"
   print "Writing file "+publicKeyFile
   open(publicKeyFile, "w").write(authorizedKeyLine+"\n")
 
@@ -119,11 +119,9 @@ if __name__ == '__main__':
     print "\nExtracting public SSH keys for userid: "+userid
     authorizedKeysFile = options.homeDir+"/"+userid+"/.ssh/authorized_keys"
     authorizedKeysList = getPublicSSHKeysList(authorizedKeysFile)
-    #print "\nauthorizedKeysList =", authorizedKeysList
+
     for authorizedKeyLine in authorizedKeysList:
       machineOriginName = getMachineOriginName(authorizedKeyLine)
-      #print "machineOriginName = "+machineOriginName
       normalizedMachineOriginName = getNormalizedMachineOriginName(machineOriginName)
-      #print "normalizedMachineOriginName =", normalizedMachineOriginName
-      writePublicSSHKeyFile(authorizedKeyLine, normalizedMachineOriginName,
+      writePublicSSHKeyFile(userid, authorizedKeyLine, normalizedMachineOriginName,
         options.keyDir)
