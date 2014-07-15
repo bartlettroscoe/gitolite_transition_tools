@@ -16,13 +16,15 @@ $ update-local-remotes-to-gitolite.py \
 and it replaces old git repo URLs in <localRepoDir>/.git/config files of the
 form:
 
-  url = [<userid>@]<old-remote-machine>:<old-remote-dir>/<repo-name>
+  url = [<userid>@]<old-remote-machine>:<old-remote-dir>/<repo-name>[.git]
 
 and replaces it with:
 
   url = <new-remote-base><remote-name>
 
-If <userid> was used in the original remote URL, it is discarded because gitolite always uses 
+If <userid> was used in the original remote URL, it is discarded because
+gitolite always uses a special seperate user (e.g. 'git').  Also, to normalize
+the git repo name, the optional ".git" extension is removed.
 
 This is sufficient flexibility for the types of transitions this script was
 designed to support.
@@ -58,6 +60,10 @@ def getRemoteUrlDict(inputRemoteUrlStr):
   dirAndRepo = splitOnMachine[1]
 
   (baseDir, repoName) = os.path.split(dirAndRepo)
+
+  (repoNameBase, repoNameExt) = os.path.splitext(repoName)
+  if repoNameExt == ".git":
+    repoName = repoNameBase
 
   return {
     "userid" : userid,
