@@ -16,11 +16,11 @@ $ update-local-remotes-to-gitolite.py \
 and it replaces old git repo URLs in <localRepoDir>/.git/config files of the
 form:
 
-  url = [<userid>@]<old-remote-machine>:<old-remote-dir>/<repo-name>[.git]
+  url = [<userid>@]<old-remote-machine>:<old-remote-dir>/<sub-dir>/<repo-name>[.git]
 
 and replaces it with:
 
-  url = <new-remote-base><remote-name>
+  url = <new-remote-base><sub-dir>/<remote-name>
 
 If <userid> was used in the original remote URL, it is discarded because
 gitolite always uses a special seperate user (e.g. 'git').  Also, to normalize
@@ -85,6 +85,92 @@ def matchesMachineAndBaseDir(remoteUrlDict, machine, baseDir):
     return True
 
   return False
+
+
+def getNewRemoteUrlStrFromOldUrlDict(oldRemoteUrlDirct, oldRemoteBaseDir,
+  newRemoteBase \
+  ):
+  # Find the left over subdir path that must be added to the new remote URL
+  oldFullRemoteDir = oldRemoteUrlDirct.get("baseDir")
+  if oldFullRemoteDir == oldRemoteBaseDir:
+    subDir = ""
+  else:
+    oldRemoteBaseDirSlash = oldRemoteBaseDir+"/"
+    if oldFullRemoteDir.find(oldRemoteBaseDirSlash) != 0:
+      raise Exception("Error, the matching base dir path '"+oldRemoteBaseDir+"'" \
+        +" is not the beginning path in the remote repo path '"+oldFullRemoteDir+"'!")
+    subDir = oldFullRemoteDir[len(oldRemoteBaseDirSlash):]+"/"
+  # Return the new remote URL
+  return newRemoteBase+subDir+oldRemoteUrlDirct.get("repoName")
+
+
+def updateGitConfigFileStr(oldGitConfigStr, oldMachineNames, oldRemoteBaseDir,
+  newRemoteBase \
+  ):
+
+  newGitConfigFileStr = ""
+
+  oldGitConfigStrArray = oldGitConfigStr.split("\n")
+  if(oldGitConfigStrArray[-1] == ""): # Get rid of last dummy empty line after the last "\n"
+    oldGitConfigStrArray = oldGitConfigStrArray[:-1]
+
+  for line in oldGitConfigStrArray:
+
+    #print "\nline = '"+line+"'"
+
+    didReplacement = False
+
+    # Look for the beginning url
+
+    if line.find("\turl") == 0:
+
+      skipReplacement = False
+
+      lineEqSplit = line.split("=")
+
+      # Make sure we have <something1> = <something2>
+      if len(lineEqSplit) != 2:
+        # Line is not split by '=' so don't replace!
+        skipReplacement = True
+
+      # Make sure that <something1> == 'url'
+      if not skipReplacement:
+        leftOfEq = lineEqSplit[0].strip()
+        #print "leftOfEq = '"+leftOfEq+"'"
+        if leftOfEq != "url":
+          skipReplacement = True
+
+      # If the line is matching for "\turl =", then repalce the URL
+      if not skipReplacement:
+
+        oldRemoteUrlDict = getRemoteUrlDict(lineEqSplit[1].strip())
+        #print "oldRemoteUrlDict =", oldRemoteUrlDict
+
+        # Make sure this URL matches what we are looking to replace
+        matchesOne = False
+        for oldMachineName in oldMachineNames:
+          if  matchesMachineAndBaseDir(oldRemoteUrlDict, oldMachineName,
+            oldRemoteBaseDir \
+            ):
+            #print "Matches '"+oldMachineName+"' and '"+oldRemoteBaseDir+"'!"
+            matchesOne = True
+        if not matchesOne:
+          skipReplacement = True
+
+        if not skipReplacement:
+          # The URL matches so we just need to do the replacement!
+          newRemoteUrl = getNewRemoteUrlStrFromOldUrlDict(oldRemoteUrlDict,
+            oldRemoteBaseDir, newRemoteBase)
+          newLine = "\turl = "+newRemoteUrl
+          #print "newLine = '"+newLine+"'"
+          newGitConfigFileStr += (newLine+"\n")
+          didReplacement = True
+
+    if not didReplacement:
+      newGitConfigFileStr += (line+"\n")
+
+  return newGitConfigFileStr
+
 
 
 #
