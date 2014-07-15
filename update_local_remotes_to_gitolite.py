@@ -67,8 +67,18 @@ def getRemoteUrlDict(inputRemoteUrlStr):
     }
 
 
-  
+def matchesMachineAndBaseDir(remoteUrlDict, machine, baseDir):
 
+  if remoteUrlDict.get("machine") != machine:
+    return False
+
+  remoteBaseDir = remoteUrlDict.get("baseDir")
+  if remoteBaseDir == baseDir:
+    return True
+  elif remoteBaseDir.find(baseDir+"/") == 0:
+    return True
+
+  return False
 
 
 #

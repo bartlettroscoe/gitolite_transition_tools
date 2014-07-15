@@ -50,9 +50,6 @@ git_config_file_1 = \
 #
 
 
-
-
-
 class test_getRemoteUrlDirct(unittest.TestCase):
 
 
@@ -87,6 +84,64 @@ class test_getRemoteUrlDirct(unittest.TestCase):
       "repoName" : "Trilinos"
       }
     self.assertEqual(urlDict, urlDict_expected)
+
+
+class test_matchesMachineAndBaseDir(unittest.TestCase):
+
+
+  def test_1(self):
+    self.assertEqual(
+      matchesMachineAndBaseDir(
+        getRemoteUrlDict("casl-dev:/git-root/Trilinos"),
+        "casl-dev", "/git-root"
+        ),
+      True
+      )
+
+
+  def test_2(self):
+    self.assertEqual(
+      matchesMachineAndBaseDir(
+        getRemoteUrlDict("casl-dev:/git-root/Trilinos"),
+        "casl-dev", "/git-roots"
+        ),
+      False
+      )
+
+
+  def test_3(self):
+    self.assertEqual(
+      matchesMachineAndBaseDir(
+        getRemoteUrlDict("casl-dev:/git-root/collaboration/Trilinos"),
+        "casl-dev", "/git-root"
+        ),
+      True
+      )
+
+
+  def test_4(self):
+    self.assertEqual(
+      matchesMachineAndBaseDir(
+        getRemoteUrlDict("8vt@casl-dev.ornl.gov:/git-root/COBRA-TF"),
+        "casl-dev", "/git-root"
+        ),
+      False
+      )
+
+
+  def test_5(self):
+    self.assertEqual(
+      matchesMachineAndBaseDir(
+        getRemoteUrlDict("8vt@casl-dev.ornl.gov:/git-root/COBRA-TF"),
+        "casl-dev.ornl.gov", "/git-root"
+        ),
+      True
+      )
+
+
+#
+# Main()
+#
 
 
 if __name__ == '__main__':
