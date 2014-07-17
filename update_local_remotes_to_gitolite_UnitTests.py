@@ -164,6 +164,16 @@ class test_getRemoteUrlDirct(unittest.TestCase):
       }
     self.assertEqual(urlDict, urlDict_expected)
 
+  def test_3(self):
+    urlDict = getRemoteUrlDict("/home/8vt/git/Trilinos")
+    urlDict_expected = {
+      "userid" : "",
+      "machine" : "",
+      "baseDir" : "/home/8vt/git",
+      "repoName" : "Trilinos"
+      }
+    self.assertEqual(urlDict, urlDict_expected)
+
 
 class test_matchesMachineAndBaseDir(unittest.TestCase):
 

@@ -8,7 +8,7 @@ This script is run by individual users to update their local git repos for
 repos that are moved under gitolite repo.  This is run as, for example,
 
 $ update-local-remotes-to-gitolite.py \
-  --old-remote-machine=casl-dev,casl-dev.ornl.gov \
+  --old-remote-machines=casl-dev,casl-dev.ornl.gov \
   --old-remote-dir=/git-root \
   --new-remote-base=git@casl-dev: \
   --local-repo-dirs=repo1,repo2,...
@@ -55,9 +55,12 @@ def getRemoteUrlDict(inputRemoteUrlStr):
     machineDirRepo = splitOnUserid[1]
   
   splitOnMachine = machineDirRepo.split(":")
-  
-  machine = splitOnMachine[0]
-  dirAndRepo = splitOnMachine[1]
+  if len(splitOnMachine) == 2:
+    machine = splitOnMachine[0]
+    dirAndRepo = splitOnMachine[1]
+  else:
+    machine = ""
+    dirAndRepo = machineDirRepo
 
   (baseDir, repoName) = os.path.split(dirAndRepo)
 
@@ -105,7 +108,7 @@ def getNewRemoteUrlStrFromOldUrlDict(oldRemoteUrlDirct, oldRemoteBaseDir,
 
 
 def updateGitConfigFileStr(oldGitConfigStr, oldMachineNames, oldRemoteBaseDir,
-  newRemoteBase \
+  newRemoteBase, showReplacements=False \
   ):
 
   newGitConfigFileStr = ""
@@ -143,7 +146,8 @@ def updateGitConfigFileStr(oldGitConfigStr, oldMachineNames, oldRemoteBaseDir,
       # If the line is matching for "\turl =", then repalce the URL
       if not skipReplacement:
 
-        oldRemoteUrlDict = getRemoteUrlDict(lineEqSplit[1].strip())
+        oldRemoteUrl = lineEqSplit[1].strip()
+        oldRemoteUrlDict = getRemoteUrlDict(oldRemoteUrl)
         #print "oldRemoteUrlDict =", oldRemoteUrlDict
 
         # Make sure this URL matches what we are looking to replace
@@ -163,6 +167,8 @@ def updateGitConfigFileStr(oldGitConfigStr, oldMachineNames, oldRemoteBaseDir,
             oldRemoteBaseDir, newRemoteBase)
           newLine = "\turl = "+newRemoteUrl
           #print "newLine = '"+newLine+"'"
+          if showReplacements:
+            print "Replacing remote '"+oldRemoteUrl+"' with '"+newRemoteUrl+"'"
           newGitConfigFileStr += (newLine+"\n")
           didReplacement = True
 
@@ -172,6 +178,26 @@ def updateGitConfigFileStr(oldGitConfigStr, oldMachineNames, oldRemoteBaseDir,
   return newGitConfigFileStr
 
 
+def updateGitConfigFile(gitConfigFile, oldMachineNames, oldRemoteBaseDir,
+  newRemoteBase, noOp, dumpNewFile \
+  ):
+
+  print "\nProcessing: "+gitConfigFile
+
+  oldGitConfigFileStr = open(gitConfigFile, "r").read()
+
+  newGitConfigFileStr = updateGitConfigFileStr(oldGitConfigFileStr,
+    oldMachineNames, oldRemoteBaseDir, newRemoteBase, \
+    showReplacements = True)
+
+  if dumpNewFile:
+    print "New file:\n---------------------------------------------"
+    print newGitConfigFileStr
+    print "---------------------------------------------"
+
+  if not noOp:
+    open(gitConfigFile, "w").write(newGitConfigFileStr)
+
 
 #
 # Script body
@@ -180,6 +206,105 @@ def updateGitConfigFileStr(oldGitConfigStr, oldMachineNames, oldRemoteBaseDir,
 
 if __name__ == '__main__':
 
-  raise Exception("ToDo: Implement!")
+  #
+  # A) Get command-line options
+  #
+  
+  from optparse import OptionParser
+  
+  clp = OptionParser(usage=usageHelp)
+
+  clp.add_option(
+    "--old-remote-machines", dest="oldRemoteMachines", type="string",
+    default="",
+    help="List of remote machines to match, <machine0>,<machine1>,....  This is" \
+      +" the <old-remote-machines> part. (required)")
+
+  clp.add_option(
+    "--old-remote-dir", dest="oldRemoteDir", type="string",
+    default="",
+    help="Directory base for remote machines to match.  This is the"\
+      +" <old-remote-dir> part. (required)")
+
+  clp.add_option(
+    "--new-remote-base", dest="newRemoteBase", type="string",
+    default="",
+    help="The new base for the repalced remotes.  This is <new-remote-base>." \
+      + " (required).")
+
+  clp.add_option(
+    "--local-repo-dirs", dest="localRepoDirs", type="string",
+    default="",
+    help="List of local repos to do replacements in <dir0>,<dir1>,..." \
+      + "")
+
+  clp.add_option(
+    "--local-repo-dir-file", dest="localRepoDirsFile", type="string",
+    default="",
+    help="Path to a file that lists the local repos that will be processed.  When" \
+      + " this option is used, the current directory is also included.")
+
+  clp.add_option(
+    "--no-op", dest="noOp", action="store_true",
+    help="If set, then no files will be written, but files will be read.",
+    default=False )
+
+  clp.add_option(
+    "--dump-new-file", dest="dumpNewFile", action="store_true",
+    help="If set, then the contents of the updated files will be printed to STDOUT.",
+    default=False )
+
+  clp.add_option(
+    "--debug-dump", dest="debugDump", action="store_true",
+    help="If set, then a lot of debug info is printed to screen.",
+    default=False )
+  
+  (options, args) = clp.parse_args()
+
+  # Assert the commandline
+
+  if not options.oldRemoteMachines:
+    print "\nError: --old-remote-machines=<machine0>,<machine1>,... is required!"
+    sys.exit(1)
+
+  oldRemoteMachines = options.oldRemoteMachines.split(",")
+
+  if not options.oldRemoteDir:
+    print "\nError: --old-remote-dir=<old-remote-dir> is required!"
+    sys.exit(2)
+
+  if not options.newRemoteBase:
+    print "\nError: --new-remote-base=<new-remote-base> is required!"
+    sys.exit(3)
+
+  if not (options.localRepoDirs or options.localRepoDirsFile):
+    print "\nError: either --local-repo-dirs or --local-repo-dirs-file must be set!"
+    sys.exit(4)
+
+  #
+  # B) Loop over the list of local repos
+  #
+
+  if options.localRepoDirs:
+    localRepoDirs = options.localRepoDirs.split(",")
+  else:
+    raise Exception("ToDo: read list of repos from localReposDirsFile")
+  
+  for localRepoDir in localRepoDirs:
+
+    gitConfigFile = localRepoDir+"/.git/config"
+
+    if os.path.exists(gitConfigFile):
+
+      updateGitConfigFile(gitConfigFile, oldRemoteMachines, options.oldRemoteDir,
+        options.newRemoteBase, options.noOp, options.dumpNewFile)
+
+    
+
+
+
+  
+
+
 
 #  LocalWords:  repos repo
