@@ -1,5 +1,24 @@
 #!/usr/bin/env python
 
+
+
+#
+# Defaults
+#
+# These defaults can be set for specific applications of the script so that
+# users don't need to pass in a bunch of arguments.
+#
+
+oldRemoteMachines_default = ""
+oldRemoteDir_default = ""
+newRemoteBase_default = ""
+localRepoDirsFile_default = ""
+
+
+#
+# Help message
+#
+
 usageHelp = r"""update-local-remotes-to-gitolite.py [OPTIONS]
 
 Update the remotes in local repos for transition to gitolite.
@@ -199,6 +218,15 @@ def updateGitConfigFile(gitConfigFile, oldMachineNames, oldRemoteBaseDir,
     open(gitConfigFile, "w").write(newGitConfigFileStr)
 
 
+def readListOfLocalRepoDirsFromFile(localRepoDirsFile):
+  localRepoDirsFileStr = open(localRepoDirsFile, 'r').read()
+  localRepoDirs = ["."]
+  for localRepoDir in localRepoDirsFileStr.split("\n"):
+    if len(localRepoDir) and localRepoDir[0] != "#":
+      localRepoDirs.append(localRepoDir)
+  return localRepoDirs
+
+
 #
 # Script body
 #
@@ -216,19 +244,19 @@ if __name__ == '__main__':
 
   clp.add_option(
     "--old-remote-machines", dest="oldRemoteMachines", type="string",
-    default="",
+    default=oldRemoteMachines_default,
     help="List of remote machines to match, <machine0>,<machine1>,....  This is" \
       +" the <old-remote-machines> part. (required)")
 
   clp.add_option(
     "--old-remote-dir", dest="oldRemoteDir", type="string",
-    default="",
+    default=oldRemoteDir_default,
     help="Directory base for remote machines to match.  This is the"\
       +" <old-remote-dir> part. (required)")
 
   clp.add_option(
     "--new-remote-base", dest="newRemoteBase", type="string",
-    default="",
+    default=newRemoteBase_default,
     help="The new base for the repalced remotes.  This is <new-remote-base>." \
       + " (required).")
 
@@ -236,11 +264,11 @@ if __name__ == '__main__':
     "--local-repo-dirs", dest="localRepoDirs", type="string",
     default="",
     help="List of local repos to do replacements in <dir0>,<dir1>,..." \
-      + "")
+      + "  If this is specified it is used over --local-repo-dirs-file.")
 
   clp.add_option(
-    "--local-repo-dir-file", dest="localRepoDirsFile", type="string",
-    default="",
+    "--local-repo-dirs-file", dest="localRepoDirsFile", type="string",
+    default=localRepoDirsFile_default,
     help="Path to a file that lists the local repos that will be processed.  When" \
       + " this option is used, the current directory is also included.")
 
@@ -288,7 +316,7 @@ if __name__ == '__main__':
   if options.localRepoDirs:
     localRepoDirs = options.localRepoDirs.split(",")
   else:
-    raise Exception("ToDo: read list of repos from localReposDirsFile")
+    localRepoDirs = readListOfLocalRepoDirsFromFile(options.localRepoDirsFile)
   
   for localRepoDir in localRepoDirs:
 
