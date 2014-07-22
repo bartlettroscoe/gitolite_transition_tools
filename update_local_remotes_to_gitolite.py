@@ -328,7 +328,6 @@ if __name__ == '__main__':
 
   repoNameReplacements = {}
   for repoNameReplaceStr in options.repoNameReplacements.split(","):
-    print "\nrepoNameReplaceStr = '"+repoNameReplaceStr+"'"
     (oldRepoName, newRepoName) = repoNameReplaceStr.split(":")
     repoNameReplacements[oldRepoName] = newRepoName
   
