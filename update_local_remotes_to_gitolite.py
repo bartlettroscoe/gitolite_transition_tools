@@ -327,9 +327,10 @@ if __name__ == '__main__':
     localRepoDirs = readListOfLocalRepoDirsFromFile(options.localRepoDirsFile)
 
   repoNameReplacements = {}
-  for repoNameReplaceStr in options.repoNameReplacements.split(","):
-    (oldRepoName, newRepoName) = repoNameReplaceStr.split(":")
-    repoNameReplacements[oldRepoName] = newRepoName
+  if options.repoNameReplacements:
+    for repoNameReplaceStr in options.repoNameReplacements.split(","):
+      (oldRepoName, newRepoName) = repoNameReplaceStr.split(":")
+      repoNameReplacements[oldRepoName] = newRepoName
   
   for localRepoDir in localRepoDirs:
 
