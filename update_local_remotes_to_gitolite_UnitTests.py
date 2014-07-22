@@ -34,6 +34,10 @@ git_config_file_1 = \
 [remote "origin"]
 	url = casl-dev:/git-root/Trilinos
 	fetch = +refs/heads/*:refs/remotes/origin/*
+[remote "other1"]
+	url = casl-dev:/git-root/casl_trilinos
+[remote "mamba"]
+	url = casl-dev:/git-root/casl_mamba
 [remote "urltrick"]
 	url = something.at.com:/junk/something/Trilinos
 """
@@ -46,6 +50,10 @@ git_config_file_1_out = \
 [remote "origin"]
 	url = git@casl-dev:Trilinos
 	fetch = +refs/heads/*:refs/remotes/origin/*
+[remote "other1"]
+	url = git@casl-dev:Trilinos
+[remote "mamba"]
+	url = git@casl-dev:Mamba
 [remote "urltrick"]
 	url = something.at.com:/junk/something/Trilinos
 """
@@ -237,7 +245,15 @@ class test_getNewRemoteUrlStrFromOldUrlDict(unittest.TestCase):
   def test_1(self):
     newRemoteUrlStr = getNewRemoteUrlStrFromOldUrlDict(
       getRemoteUrlDict("casl-dev.ornl.gov:/git-root/Trilinos"),
-      "/git-root", "git@casl-dev:"
+      "/git-root", "git@casl-dev:", {}
+      )
+    newRemoteUrlStr_expected = "git@casl-dev:Trilinos"
+    self.assertEqual(newRemoteUrlStr, newRemoteUrlStr_expected)
+
+  def test_1b(self):
+    newRemoteUrlStr = getNewRemoteUrlStrFromOldUrlDict(
+      getRemoteUrlDict("casl-dev.ornl.gov:/git-root/casl_trilinos"),
+      "/git-root", "git@casl-dev:", { "casl_trilinos" : "Trilinos" }
       )
     newRemoteUrlStr_expected = "git@casl-dev:Trilinos"
     self.assertEqual(newRemoteUrlStr, newRemoteUrlStr_expected)
@@ -245,7 +261,7 @@ class test_getNewRemoteUrlStrFromOldUrlDict(unittest.TestCase):
   def test_2(self):
     newRemoteUrlStr = getNewRemoteUrlStrFromOldUrlDict(
       getRemoteUrlDict("casl-dev:/git-root/collaboration/Trilinos"),
-      "/git-root", "git@casl-dev:"
+      "/git-root", "git@casl-dev:", {}
       )
     newRemoteUrlStr_expected = "git@casl-dev:collaboration/Trilinos"
     self.assertEqual(newRemoteUrlStr, newRemoteUrlStr_expected)
@@ -255,7 +271,7 @@ class test_getNewRemoteUrlStrFromOldUrlDict(unittest.TestCase):
       Exception,
       getNewRemoteUrlStrFromOldUrlDict,
       getRemoteUrlDict("casl-dev:/some-other-path/Trilinos"),
-      "/git-root", "git@casl-dev:"
+      "/git-root", "git@casl-dev:", {}
       )
 
 
@@ -263,12 +279,13 @@ class test_updateGitConfigFileStr(unittest.TestCase):
 
   def test_1(self):
     newGetConfigFileStr = updateGitConfigFileStr(git_config_file_1,
-     ["casl-dev"], "/git-root", "git@casl-dev:" )
+     ["casl-dev"], "/git-root", "git@casl-dev:",
+     { "casl_trilinos":"Trilinos", "casl_mamba":"Mamba" } )
     assertEqualsLineByLine(self, newGetConfigFileStr, git_config_file_1_out)
 
   def test_2(self):
     newGetConfigFileStr = updateGitConfigFileStr(git_config_file_2,
-     ["casl-dev", "casl-dev.ornl.gov"], "/git-root", "git@casl-dev:" )
+     ["casl-dev", "casl-dev.ornl.gov"], "/git-root", "git@casl-dev:", {} )
     assertEqualsLineByLine(self, newGetConfigFileStr, git_config_file_2_out)
 
 

@@ -13,6 +13,7 @@ oldRemoteMachines_default = ""
 oldRemoteDir_default = ""
 newRemoteBase_default = ""
 localRepoDirsFile_default = ""
+repoNameReplacements_default = ""
 
 
 #
@@ -110,7 +111,7 @@ def matchesMachineAndBaseDir(remoteUrlDict, machine, baseDir):
 
 
 def getNewRemoteUrlStrFromOldUrlDict(oldRemoteUrlDirct, oldRemoteBaseDir,
-  newRemoteBase \
+  newRemoteBase, repoNameReplacement \
   ):
   # Find the left over subdir path that must be added to the new remote URL
   oldFullRemoteDir = oldRemoteUrlDirct.get("baseDir")
@@ -123,11 +124,13 @@ def getNewRemoteUrlStrFromOldUrlDict(oldRemoteUrlDirct, oldRemoteBaseDir,
         +" is not the beginning path in the remote repo path '"+oldFullRemoteDir+"'!")
     subDir = oldFullRemoteDir[len(oldRemoteBaseDirSlash):]+"/"
   # Return the new remote URL
-  return newRemoteBase+subDir+oldRemoteUrlDirct.get("repoName")
+  repoName = oldRemoteUrlDirct.get("repoName")
+  newRepoName = repoNameReplacement.get(repoName, repoName)
+  return newRemoteBase+subDir+newRepoName
 
 
 def updateGitConfigFileStr(oldGitConfigStr, oldMachineNames, oldRemoteBaseDir,
-  newRemoteBase, showReplacements=False \
+  newRemoteBase, repoNameReplacement, showReplacements=False \
   ):
 
   newGitConfigFileStr = ""
@@ -183,7 +186,7 @@ def updateGitConfigFileStr(oldGitConfigStr, oldMachineNames, oldRemoteBaseDir,
         if not skipReplacement:
           # The URL matches so we just need to do the replacement!
           newRemoteUrl = getNewRemoteUrlStrFromOldUrlDict(oldRemoteUrlDict,
-            oldRemoteBaseDir, newRemoteBase)
+            oldRemoteBaseDir, newRemoteBase, repoNameReplacement)
           newLine = "\turl = "+newRemoteUrl
           #print "newLine = '"+newLine+"'"
           if showReplacements:
@@ -198,7 +201,7 @@ def updateGitConfigFileStr(oldGitConfigStr, oldMachineNames, oldRemoteBaseDir,
 
 
 def updateGitConfigFile(gitConfigFile, oldMachineNames, oldRemoteBaseDir,
-  newRemoteBase, noOp, dumpNewFile \
+  newRemoteBase, repoNameReplacement, noOp, dumpNewFile \
   ):
 
   print "\nProcessing: "+gitConfigFile
@@ -206,7 +209,7 @@ def updateGitConfigFile(gitConfigFile, oldMachineNames, oldRemoteBaseDir,
   oldGitConfigFileStr = open(gitConfigFile, "r").read()
 
   newGitConfigFileStr = updateGitConfigFileStr(oldGitConfigFileStr,
-    oldMachineNames, oldRemoteBaseDir, newRemoteBase, \
+    oldMachineNames, oldRemoteBaseDir, newRemoteBase, repoNameReplacement, \
     showReplacements = True)
 
   if dumpNewFile:
@@ -273,6 +276,11 @@ if __name__ == '__main__':
       + " this option is used, the current directory is also included.")
 
   clp.add_option(
+    "--repo-name-replacements", dest="repoNameReplacements", type="string",
+    default=repoNameReplacements_default,
+    help="List of repo name replacements '<oldName0>:<newName0>,<oldName1>:<newName1>,...'.")
+
+  clp.add_option(
     "--no-op", dest="noOp", action="store_true",
     help="If set, then no files will be written, but files will be read.",
     default=False )
@@ -317,6 +325,12 @@ if __name__ == '__main__':
     localRepoDirs = options.localRepoDirs.split(",")
   else:
     localRepoDirs = readListOfLocalRepoDirsFromFile(options.localRepoDirsFile)
+
+  repoNameReplacements = {}
+  for repoNameReplaceStr in options.repoNameReplacements.split(","):
+    print "\nrepoNameReplaceStr = '"+repoNameReplaceStr+"'"
+    (oldRepoName, newRepoName) = repoNameReplaceStr.split(":")
+    repoNameReplacements[oldRepoName] = newRepoName
   
   for localRepoDir in localRepoDirs:
 
@@ -325,14 +339,6 @@ if __name__ == '__main__':
     if os.path.exists(gitConfigFile):
 
       updateGitConfigFile(gitConfigFile, oldRemoteMachines, options.oldRemoteDir,
-        options.newRemoteBase, options.noOp, options.dumpNewFile)
-
-    
-
-
-
-  
-
-
+        options.newRemoteBase, repoNameReplacements, options.noOp, options.dumpNewFile)
 
 #  LocalWords:  repos repo
