@@ -7,7 +7,7 @@ Extract public SSH keys for a set of listed users'
 to put into gitolite-admin/keydir/.
 
 This script is to be run as sudo to gather up all of the public SSH files for
-a set of users already on a machine and create gitolite-compatiable public ky
+a set of users already on a machine and create gitolite-compatiable public key
 files of the form <userid>@<some-machine-name>.pub run using something like:
 
 $ sudo extract-public-ssh-keys-for-gitolite.py \
